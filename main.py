@@ -132,44 +132,47 @@ def input_error(func):
     return inner
 
 @input_error
-def add_contact(args, address_book):
-    name, phone = args
-    if address_book.find(name):
-        return f"Contact {name} already exists."
-    new_record = Record(name)
-    new_record.add_phone(phone)
-    address_book.add_record(new_record)
-    return f"Contact {name} added."
+def add_contact(args, book: AddressBook):
+    name, phone, *_ = args
+    record = book.find(name)
+    message = "Contact updated."
+    if record is None:
+        record = Record(name)
+        book.add_record(record)
+        message = f"Contact {name} added."
+    if phone:
+        record.add_phone(phone)
+    return message
 
 @input_error
-def change_contact(args, address_book):
-    name,new_phone = args
-    record = address_book.find(name)
+def change_contact(args, book):
+    name,old_phone, new_phone = args
+    record = book.find(name)
     if record:
-        record.edit_phone(record.phones[0].value, new_phone)
+        record.edit_phone(old_phone, new_phone)
         return f"Contact {name} updated."
     else:
         return "Contact not found."
 
 @input_error
-def show_phone(args, address_book):
+def show_phone(args, book):
     name = args[0]
-    record = address_book.find(name)
+    record = book.find(name)
     if record:
         return f"{name}: {"; ".join(p.value for p in record.phones)}"
     return "Contact not found."
 
 @input_error
-def show_all(address_book):
-    if address_book.data:
-        return "\n" .join([str(record) for record in address_book.data.values()])
+def show_all(book):
+    if book.data:
+        return "\n" .join([str(record) for record in book.data.values()])
     else:
         return "No contacts available."
     
 @input_error
-def add_birthday(args, address_book):
+def add_birthday(args, book):
     name, birthday = args
-    record = address_book.find(name)
+    record = book.find(name)
     if record:
         record.add_birthday(birthday)
         return f"Birthday for {name} added."
@@ -177,8 +180,18 @@ def add_birthday(args, address_book):
         return "Contact not found."
     
 @input_error
-def upcoming_birthdays(address_book):
-    upcoming = address_book.get_upcoming_birthdays()
+def show_birthday(args, book):
+    name = args[0]
+    record = book.find(name)
+    if record and record.birthday:
+        return f"{name}'s birthday is on {record.birthday.value.strftime("%%d.%m.%Y")}"
+    elif record:
+        return f"{name} has no birthday set."
+    return "Contact not found."
+    
+@input_error
+def birthdays(args, book):
+    upcoming = book.get_upcoming_birthdays()
     if not upcoming:
         return "No upcoming birthdays withing a week."
     return "\n".join([f"{item["name"]} has birthday on {item["congratulation_date"]}" for item in upcoming])
@@ -186,30 +199,40 @@ def upcoming_birthdays(address_book):
 # ----------------- Основна програма ----------------- #
 
 def main():
-    address_book = AddressBook()
+    book = AddressBook()
     print("Welcome to the assistant bot!")
-
     while True:
         user_input = input("Enter a command: ").strip()
-        command, args = parse_input(user_input)
+        command, *args = parse_input(user_input)
 
         if command in ["close", "exit"]:
             print("Good bye!")
             break
+
         elif command == "hello":
             print("How can I help you?")
+
         elif command == "add":
-            print(add_contact(args, address_book))
+            print(add_contact(args, book))
+
         elif command == "change":
-            print(change_contact(args, address_book))
+            print(change_contact(args, book))
+
         elif command == "phone":
-            print(show_phone(args, address_book))
+            print(show_phone(args, book))
+
         elif command == "all":
-            print(show_all(address_book))
-        elif command == "birthday":
-            print(add_birthday(args, address_book))
-        elif command == "upcoming":
-            print(upcoming_birthdays(address_book))
+            print(show_all(book))
+
+        elif command == "add-birthday":
+            print(add_birthday(args, book))
+
+        elif command == "show-birthday":
+            print(show_birthday(args, book))
+
+        elif command == "birthdays":
+            print(birthdays(args, book))
+
         else:
             print("Invalid command.")
 
