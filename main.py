@@ -30,7 +30,7 @@ class Birthday(Field):
     @staticmethod
     def validate_and_parse_birthday(value):
         try:
-            return datetime.strptime(value, "%d.%m.%Y".date())
+            return datetime.strptime(value, "%d.%m.%Y").date()
         except ValueError:
             raise ValueError("Invalid date format. Use DD.MM.YYYY")
 
